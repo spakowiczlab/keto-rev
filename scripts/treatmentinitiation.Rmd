@@ -65,7 +65,7 @@ ggplot(treatmentinitiation_summary, aes(x = YearGroup, y = n, fill = Treatment))
 ``````
 
 ```{r}
-ggsave(filename = "treatmentinitiation_figure.png", plot = last_plot(), bg = "white")
+ggsave(filename = "treatmentinitiation_figure.png", plot = last_plot(), bg = "white", width = 8, height = 6)
 ```
 
 

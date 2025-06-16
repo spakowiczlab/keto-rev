@@ -1,0 +1,83 @@
+---
+title: "completedtrialdesign"
+output: html_document
+date: "2025-06-16"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(readxl)
+completedtrialdesign <- read_excel("exploratory/data/#ketorev_completedtrial_cancertype.xlsx")
+View(completedtrialdesign)
+```
+
+```{r}
+
+library(tidyverse)
+
+
+completedtrialdesign <- completedtrialdesign %>%
+  mutate(YearGroup = case_when(
+    Initiation <= 2005 ~ "≤2005",
+    Initiation >= 2006 & Initiation <= 2010 ~ "2006–2010",
+    Initiation >= 2011 & Initiation <= 2015 ~ "2011–2015",
+    Initiation >= 2016 & Initiation <= 2020 ~ "2016–2020",
+    TRUE ~ "Unknown"
+  ))
+
+
+completedtrialdesign$YearGroup <- factor(
+  completedtrialdesign$YearGroup,
+  levels = c("≤2005", "2006–2010", "2011–2015", "2016–2020", "Unknown")
+)
+
+
+
+design_levels <- rev(c(
+  "RCT", 
+  "Parallel Assignment", 
+  "Single Group Assignment", 
+  "Parallel Assignment (randomized)", 
+  "Single Group Crossover", 
+  "Crossover Assignment"
+))
+
+
+other_designs <- setdiff(unique(completedtrialdesign$Design), design_levels)
+
+
+full_design_levels <- c(design_levels, sort(other_designs))
+
+
+completedtrialdesign$Design <- factor(completedtrialdesign$Design, levels = full_design_levels)
+
+
+
+trial_counts <- completedtrialdesign %>%
+  count(YearGroup, Design)
+
+
+ggplot(trial_counts, aes(x = YearGroup, y = n, fill = Design)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Trial Design Over Time",
+    x = "Year Group",
+    y = "Number of Trials",
+    fill = "Trial Design"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+
+```
+
+```{r}
+ggsave(filename = "trialdesign_figure.png", plot = last_plot(), bg = "white", width = 8, height = 6)
+```
+
