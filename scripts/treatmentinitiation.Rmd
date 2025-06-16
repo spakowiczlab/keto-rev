@@ -1,0 +1,71 @@
+---
+title: '#ketorev_initiation_treatment'
+output: html_document
+date: "2025-06-16"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(readxl)
+treatmentinitiation_data <- read_excel("exploratory/data/#keto-rev_treatmentinitiation_data.xlsx")
+View(treatmentinitiation_data)
+```
+
+```{r}
+treatmentinitiation_data$Initiation <- as.numeric(treatmentinitiation_data$Initiation)
+```
+
+```{r}
+treatmentinitiation_data <- treatmentinitiation_data %>%
+  mutate(Treatment = case_when(
+    Treatment %in% c("Bevacizumab", "Chemotherapy or Radiation Therapy") ~ "Other",
+    TRUE ~ Treatment
+  ))
+
+```
+
+```{r}
+treatmentinitiation_data <- treatmentinitiation_data %>%
+  mutate(YearGroup = case_when(
+    Initiation <= 2005 ~ "≤2005",
+    Initiation >= 2006 & Initiation <= 2010 ~ "2006–2010",
+    Initiation >= 2011 & Initiation <= 2015 ~ "2011–2015",
+    Initiation >= 2016 & Initiation <= 2020 ~ "2016–2020",
+    TRUE ~ "Other"
+  ))
+```
+
+```{r}
+treatmentinitiation_data$YearGroup <- factor(treatmentinitiation_data$YearGroup, levels = c("≤2005", "2006–2010", "2011–2015", "2016–2020", "Other"))
+```
+
+```{r}
+treatmentinitiation_summary <- treatmentinitiation_data %>%
+  count(YearGroup, Treatment)
+```
+
+```{r}
+treatmentinitiation_summary$Treatment <- factor(treatmentinitiation_summary$Treatment, levels = c("Chemotherapy", "Chemoradiation", "Radiotherapy", "Other", "None"))
+```
+
+```{r}
+ggplot(treatmentinitiation_summary, aes(x = YearGroup, y = n, fill = Treatment)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Number of Clinical Trials by Year Group and Treatment Type",
+    x = "Year Group",
+    y = "Number of Trials",
+    fill = "Treatment"
+  ) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 10)) +
+  theme_minimal(base_size = 14)
+``````
+
+```{r}
+ggsave(filename = "treatmentinitiation_figure.png", plot = last_plot(), bg = "white")
+```
+
+
