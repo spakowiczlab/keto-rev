@@ -246,15 +246,15 @@ combined_counts <- bind_rows(
 
 final_plot <- ggplot(combined_counts, aes(x = YearGroup, y = n, fill = Design)) +
   geom_bar(stat = "identity") +
-  facet_wrap(~ Dataset, scales = "fixed") +  # shared y-axis
+  facet_wrap(~ Dataset, nrow = 1) +  # shared y-axis
   labs(
     title = "Number of Clinical Trials by Year and Design",
     x = "Year",
     y = "Number of Trials",
     fill = "Design"
   ) +
-  scale_y_continuous(breaks = 0:9, limits = c(0, 9)) +
-  theme_minimal() +
+ scale_y_continuous(breaks = scales::pretty_breaks(n = 10)) +
+  theme_minimal(base_size = 14) +
   theme(
     legend.position = "right",
     axis.text.x = element_text(angle = 45, hjust = 0.75),
@@ -263,6 +263,6 @@ final_plot <- ggplot(combined_counts, aes(x = YearGroup, y = n, fill = Design)) 
 
 # Save the plot
 print(final_plot)
-ggsave("combined_trials_by_year_and_design.png", plot = final_plot, width = 12, height = 6, dpi = 300, bg = "white")
+ggsave("combined_trials_by_year_and_design", plot = final_plot, width = 12, height = 6, dpi = 300, bg = "white")
 ```
 
