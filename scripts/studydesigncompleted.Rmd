@@ -68,6 +68,7 @@ ggplot(trial_counts, aes(x = YearGroup, y = n, fill = Design)) +
     y = "Number of Trials",
     fill = "Trial Design"
   ) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 10)) +
   theme_minimal() +
   theme(
     legend.position = "bottom",

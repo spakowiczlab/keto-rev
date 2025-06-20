@@ -1,0 +1,419 @@
+---
+title: "ongoingtermwithdrawn"
+author: "Jonah Bukovac"
+date: "2025-06-20"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Facet Plot for Completed, In-Progress, and Terminated Trials
+```{r}
+library(readxl)
+otw_data <- read_excel("exploratory/data/terminated_ongoing_trials_tabledata.xlsx")
+View(otw_data)
+```
+
+```{r}
+otw_data[21, 7] <- "None"
+```
+
+```{r}
+library(tidyverse)
+
+otw_data <- otw_data %>%
+  mutate(
+    AdjuvantSimplified = case_when(
+      str_detect(`Adjuvant Therapy`, regex("Immunotherapy", ignore_case = TRUE)) ~ "Immunotherapy",
+      str_detect(`Adjuvant Therapy`, regex("Chemoradiation", ignore_case = TRUE)) ~ "Chemoradiation",
+      str_detect(`Adjuvant Therapy`, regex("Chemotherapy", ignore_case = TRUE)) ~ "Chemotherapy",
+      str_detect(`Adjuvant Therapy`, regex("None", ignore_case = TRUE)) ~ "None",
+      TRUE ~ "Other"
+    )
+  )
+
+
+otw_data <- otw_data %>%
+  mutate(
+    TimeGroup = case_when(
+      `Trial Initiation` <= 2010 ~ "≤2010",
+      `Trial Initiation` >= 2011 & `Trial Initiation` <= 2015 ~ "2011–2015",
+      `Trial Initiation` >= 2016 & `Trial Initiation` <= 2020 ~ "2016–2020",
+      `Trial Initiation` >= 2021 ~ "2021–2025",
+      TRUE ~ "Unknown"
+    ),
+    TimeGroup = factor(TimeGroup, levels = c("≤2010", "2011–2015", "2016–2020", "2021–2025"))
+  )
+
+
+otw_data$AdjuvantSimplified <- factor(
+  otw_data$AdjuvantSimplified,
+  levels = c("None", "Other", "Chemotherapy", "Chemoradiation", "Immunotherapy")
+)
+
+
+plot_data <- otw_data %>%
+  count(TimeGroup, AdjuvantSimplified)
+
+
+ggplot(plot_data, aes(x = TimeGroup, y = n, fill = AdjuvantSimplified)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Number of Clinical Trials by Year Group and Treatment Type",
+    x = "Trial Initiation Period",
+    y = "Number of Trials",
+    fill = "Treatment"
+  ) +
+  theme_minimal() +
+   scale_y_continuous(breaks = scales::pretty_breaks(n = 10)) +
+  theme(
+    legend.position = "right",         
+    axis.text.x = element_text(angle = 0, hjust = 0.5)  
+  )
+
+```
+
+
+
+
+library(readxl)
+View(treatmentinitiation_data)
+```
+
+```{r}
+treatmentinitiation_data$Initiation <- as.numeric(treatmentinitiation_data$Initiation)
+```
+
+```{r}
+treatmentinitiation_data <- treatmentinitiation_data %>%
+  mutate(Treatment = case_when(
+    Treatment %in% c("Bevacizumab", "Chemotherapy or Radiation Therapy") ~ "Other",
+    TRUE ~ Treatment
+  ))
+
+```
+
+```{r}
+treatmentinitiation_data <- treatmentinitiation_data %>%
+  mutate(YearGroup = case_when(
+    Initiation <= 2005 ~ "≤2005",
+    Initiation >= 2006 & Initiation <= 2010 ~ "2006–2010",
+    Initiation >= 2011 & Initiation <= 2015 ~ "2011–2015",
+    Initiation >= 2016 & Initiation <= 2020 ~ "2016–2020",
+    TRUE ~ "Other"
+  ))
+```
+
+```{r}
+treatmentinitiation_data$YearGroup <- factor(treatmentinitiation_data$YearGroup, levels = c("≤2005", "2006–2010", "2011–2015", "2016–2020", "Other"))
+```
+
+```{r}
+treatmentinitiation_summary <- treatmentinitiation_data %>%
+  count(YearGroup, Treatment)
+```
+
+```{r}
+treatmentinitiation_summary$Treatment <- factor(treatmentinitiation_summary$Treatment, levels = c("Chemotherapy", "Chemoradiation", "Radiotherapy", "Other", "None"))
+```
+
+```{r}
+ggplot(treatmentinitiation_summary, aes(x = YearGroup, y = n, fill = Treatment)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Number of Clinical Trials by Year Group and Treatment Type",
+    x = "Year Group",
+    y = "Number of Trials",
+    fill = "Treatment"
+  ) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 10)) +
+  theme_minimal(base_size = 14)
+
+
+
+
+
+
+
+```{r}
+# Load libraries
+library(tidyverse)
+
+# Step 1: Simplify Adjuvant Therapy into main categories
+otw_data <- otw_data %>%
+  mutate(
+    AdjuvantSimplified = case_when(
+      str_detect(`Adjuvant Therapy`, regex("Immunotherapy", ignore_case = TRUE)) ~ "Immunotherapy",
+      str_detect(`Adjuvant Therapy`, regex("Chemoradiation", ignore_case = TRUE)) ~ "Chemoradiation",
+      str_detect(`Adjuvant Therapy`, regex("Chemotherapy", ignore_case = TRUE)) ~ "Chemotherapy",
+      str_detect(`Adjuvant Therapy`, regex("None", ignore_case = TRUE)) ~ "None",
+      TRUE ~ "Other"
+    ),
+    TimeGroup = case_when(
+      `Trial Initiation` <= 2010 ~ "≤2010",
+      `Trial Initiation` >= 2011 & `Trial Initiation` <= 2015 ~ "2011–2015",
+      `Trial Initiation` >= 2016 & `Trial Initiation` <= 2020 ~ "2016–2020",
+      `Trial Initiation` >= 2021 ~ "2021–2025",
+      TRUE ~ "Unknown"
+    ),
+    TimeGroup = factor(TimeGroup, levels = c("≤2010", "2011–2015", "2016–2020", "2021–2025")),
+    AdjuvantSimplified = factor(
+      AdjuvantSimplified,
+      levels = c("Immunotherapy", "Chemoradiation", "Chemotherapy", "Other", "None")
+    )
+  )
+
+# Step 2a: Filter and count In-progress trials
+in_progress_data <- otw_data %>%
+  filter(Status == "In-progress") %>%
+  count(TimeGroup, AdjuvantSimplified)
+
+# Step 2b: Filter and count Terminated and Withdrawn trials
+inactive_data <- otw_data %>%
+  filter(Status %in% c("Terminated", "Withdrawn")) %>%
+  count(TimeGroup, AdjuvantSimplified)
+
+# Step 3a: Plot In-progress
+ggplot(in_progress_data, aes(x = TimeGroup, y = n, fill = AdjuvantSimplified)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "In-Progress Clinical Trials by Year Group and Treatment Type",
+    x = "Trial Initiation Period",
+    y = "Number of Trials",
+    fill = "Treatment"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "right",
+    axis.text.x = element_text(angle = 0, hjust = 0.5)
+  )
+
+# Step 3b: Plot Terminated/Withdrawn
+ggplot(inactive_data, aes(x = TimeGroup, y = n, fill = AdjuvantSimplified)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Terminated or Withdrawn Clinical Trials by Year Group and Treatment Type",
+    x = "Trial Initiation Period",
+    y = "Number of Trials",
+    fill = "Treatment"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "right",
+    axis.text.x = element_text(angle = 0, hjust = 0.5)
+  )
+
+```
+
+```{r}
+# Step 4: Add a group label and combine
+in_progress_data$StatusGroup <- "In-progress"
+inactive_data$StatusGroup <- "Terminated or Withdrawn"
+
+combined_plot_data <- bind_rows(in_progress_data, inactive_data)
+
+# Step 5: Faceted stacked bar chart
+ggplot(combined_plot_data, aes(x = TimeGroup, y = n, fill = AdjuvantSimplified)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~ StatusGroup) +
+  labs(
+    title = "Number of Clinical Trials by Year Group and Treatment Type",
+    x = "Trial Initiation Period",
+    y = "Number of Trials",
+    fill = "Treatment"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "right",
+    axis.text.x = element_text(angle = 0, hjust = 0.5)
+  )
+
+```
+
+```{r}
+# Combine data from "otw_data" for In-progress and Terminated/Withdrawn trials
+otw_data <- otw_data %>%
+  mutate(
+    AdjuvantSimplified = case_when(
+      str_detect(`Adjuvant Therapy`, regex("Immunotherapy", ignore_case = TRUE)) ~ "Immunotherapy",
+      str_detect(`Adjuvant Therapy`, regex("Chemoradiation", ignore_case = TRUE)) ~ "Chemoradiation",
+      str_detect(`Adjuvant Therapy`, regex("Chemotherapy", ignore_case = TRUE)) ~ "Chemotherapy",
+      str_detect(`Adjuvant Therapy`, regex("None", ignore_case = TRUE)) ~ "None",
+      TRUE ~ "Other"
+    ),
+    TimeGroup = case_when(
+      `Trial Initiation` <= 2010 ~ "≤2010",
+      `Trial Initiation` >= 2011 & `Trial Initiation` <= 2015 ~ "2011–2015",
+      `Trial Initiation` >= 2016 & `Trial Initiation` <= 2020 ~ "2016–2020",
+      `Trial Initiation` >= 2021 ~ "2021–2025",
+      TRUE ~ "Unknown"
+    ),
+    TimeGroup = factor(TimeGroup, levels = c("≤2010", "2011–2015", "2016–2020", "2021–2025")),
+    AdjuvantSimplified = factor(
+      AdjuvantSimplified,
+      levels = c("Immunotherapy", "Chemoradiation", "Chemotherapy", "Other", "None")
+    )
+  )
+
+# Summarize In-progress and Terminated/Withdrawn
+in_progress_data <- otw_data %>%
+  filter(Status == "In-progress") %>%
+  count(TimeGroup, AdjuvantSimplified) %>%
+  mutate(StatusGroup = "In-progress")
+
+inactive_data <- otw_data %>%
+  filter(Status %in% c("Terminated", "Withdrawn")) %>%
+  count(TimeGroup, AdjuvantSimplified) %>%
+  mutate(StatusGroup = "Terminated/Withdrawn")
+
+# Reformat treatmentinitiation_summary to match column names
+completed_data <- treatmentinitiation_summary %>%
+  rename(
+    TimeGroup = YearGroup,
+    AdjuvantSimplified = Treatment
+  ) %>%
+  mutate(StatusGroup = "Completed")
+
+# Combine all into one dataset
+combined_trials <- bind_rows(in_progress_data, inactive_data, completed_data)
+
+# Factor order for consistent stacking
+combined_trials$AdjuvantSimplified <- factor(combined_trials$AdjuvantSimplified,
+  levels = c("Immunotherapy", "Chemoradiation", "Chemotherapy", "Radiotherapy", "Other", "None")
+)
+
+# Plot faceted stacked bar chart
+ggplot(combined_trials, aes(x = TimeGroup, y = n, fill = AdjuvantSimplified)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~ StatusGroup, nrow = 1) +
+  labs(
+    title = "Number of Clinical Trials by Year Group and Treatment Type",
+    x = "Year Group",
+    y = "Number of Trials",
+    fill = "Treatment"
+  ) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 10)) +
+  theme_minimal(base_size = 14) +
+  theme(
+    legend.position = "right",
+    axis.text.x = element_text(angle = 0, hjust = 0.5)
+  )
+
+```
+
+
+```{r}
+# Load libraries
+library(tidyverse)
+library(readxl)
+
+# -------------------------
+# 1. Prepare otw_data trials (In-progress, Terminated/Withdrawn)
+# -------------------------
+
+otw_data <- otw_data %>%
+  mutate(
+    AdjuvantSimplified = case_when(
+      str_detect(`Adjuvant Therapy`, regex("Immunotherapy", ignore_case = TRUE)) ~ "Immunotherapy",
+      str_detect(`Adjuvant Therapy`, regex("Chemoradiation", ignore_case = TRUE)) ~ "Chemoradiation",
+      str_detect(`Adjuvant Therapy`, regex("Chemotherapy", ignore_case = TRUE)) ~ "Chemotherapy",
+      str_detect(`Adjuvant Therapy`, regex("None", ignore_case = TRUE)) ~ "None",
+      TRUE ~ "Other"
+    ),
+    TimeGroup = case_when(
+      `Trial Initiation` <= 2005 ~ "≤2005",
+      `Trial Initiation` >= 2006 & `Trial Initiation` <= 2010 ~ "2006–2010",
+      `Trial Initiation` >= 2011 & `Trial Initiation` <= 2015 ~ "2011–2015",
+      `Trial Initiation` >= 2016 & `Trial Initiation` <= 2020 ~ "2016–2020",
+      `Trial Initiation` >= 2021 ~ "2021–2025",
+      TRUE ~ "Other"
+    ),
+    TimeGroup = factor(TimeGroup, levels = c("≤2005", "2006–2010", "2011–2015", "2016–2020", "2021–2025"))
+  )
+
+# Count in-progress
+in_progress_data <- otw_data %>%
+  filter(Status == "In-progress") %>%
+  count(TimeGroup, AdjuvantSimplified) %>%
+  mutate(StatusGroup = "In-progress")
+
+# Count terminated or withdrawn
+inactive_data <- otw_data %>%
+  filter(Status %in% c("Terminated", "Withdrawn")) %>%
+  count(TimeGroup, AdjuvantSimplified) %>%
+  mutate(StatusGroup = "Terminated/Withdrawn")
+
+# -------------------------
+# 2. Prepare completed trials (treatmentinitiation_data)
+# -------------------------
+
+# Convert year and simplify treatment
+treatmentinitiation_data$Initiation <- as.numeric(treatmentinitiation_data$Initiation)
+
+treatmentinitiation_data <- treatmentinitiation_data %>%
+  mutate(
+    Treatment = case_when(
+      Treatment %in% c("Bevacizumab", "Chemotherapy or Radiation Therapy") ~ "Other",
+      TRUE ~ Treatment
+    ),
+    TimeGroup = case_when(
+      Initiation <= 2005 ~ "≤2005",
+      Initiation >= 2006 & Initiation <= 2010 ~ "2006–2010",
+      Initiation >= 2011 & Initiation <= 2015 ~ "2011–2015",
+      Initiation >= 2016 & Initiation <= 2020 ~ "2016–2020",
+      Initiation >= 2021 ~ "2021–2025",
+      TRUE ~ "Other"
+    ),
+    TimeGroup = factor(TimeGroup, levels = c("≤2005", "2006–2010", "2011–2015", "2016–2020", "2021–2025"))
+  )
+
+# Count completed trials
+completed_data <- treatmentinitiation_data %>%
+  count(TimeGroup, Treatment) %>%
+  rename(AdjuvantSimplified = Treatment) %>%
+  mutate(StatusGroup = "Completed")
+
+# -------------------------
+# 3. Combine all data
+# -------------------------
+
+combined_trials <- bind_rows(in_progress_data, inactive_data, completed_data)
+
+combined_trials$AdjuvantSimplified <- factor(combined_trials$AdjuvantSimplified,
+  levels = c("Immunotherapy", "Chemoradiation", "Chemotherapy", "Radiotherapy", "Other", "None")
+)
+
+# -------------------------
+# 4. Plot and save
+# -------------------------
+
+library(ggplot2)
+
+final_plot <- ggplot(combined_trials, aes(x = TimeGroup, y = n, fill = AdjuvantSimplified)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~ StatusGroup, nrow = 1) +
+  labs(
+    title = "Number of Clinical Trials by Year and Concurrent Treatment",
+    x = "Year",
+    y = "Number of Trials",
+    fill = "Concurrent Treatment"
+  ) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 10)) +
+  theme_minimal(base_size = 14) +
+  theme(
+    legend.position = "right",
+    axis.text.x = element_text(angle = 45, hjust = 0.75)
+  )
+
+# Display the plot
+print(final_plot)
+
+# Save the plot
+ggsave("combined_trials_by_year_and_treatment.png", plot = final_plot, width = 12, height = 6, dpi = 300, bg = "white")
+
+```
+
+
+
