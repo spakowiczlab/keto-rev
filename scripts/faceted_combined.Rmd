@@ -1,10 +1,277 @@
 ---
-title: "ongoingtermwithdrawn"
+title: "faceted_combined"
 author: "Jonah Bukovac"
-date: "2025-06-20"
+date: "2025-06-23"
 output: html_document
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(readxl)
+View(completedtrialdesign)
+```
+
+```{r}
+
+library(tidyverse)
+
+
+completedtrialdesign <- completedtrialdesign %>%
+  mutate(YearGroup = case_when(
+    Initiation <= 2005 ~ "≤2005",
+    Initiation >= 2006 & Initiation <= 2010 ~ "2006–2010",
+    Initiation >= 2011 & Initiation <= 2015 ~ "2011–2015",
+    Initiation >= 2016 & Initiation <= 2020 ~ "2016–2020",
+    TRUE ~ "Unknown"
+  ))
+
+
+completedtrialdesign$YearGroup <- factor(
+  completedtrialdesign$YearGroup,
+  levels = c("≤2005", "2006–2010", "2011–2015", "2016–2020", "Unknown")
+)
+
+
+
+design_levels <- rev(c(
+  "RCT", 
+  "Parallel Assignment", 
+  "Single Group Assignment", 
+  "Parallel Assignment (randomized)", 
+  "Single Group Crossover", 
+  "Crossover Assignment"
+))
+
+
+other_designs <- setdiff(unique(completedtrialdesign$Design), design_levels)
+
+
+full_design_levels <- c(design_levels, sort(other_designs))
+
+
+completedtrialdesign$Design <- factor(completedtrialdesign$Design, levels = full_design_levels)
+
+
+
+trial_counts <- completedtrialdesign %>%
+  count(YearGroup, Design)
+
+
+ggplot(trial_counts, aes(x = YearGroup, y = n, fill = Design)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Trial Design Over Time",
+    x = "Year Group",
+    y = "Number of Trials",
+    fill = "Trial Design"
+  ) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 10)) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+
+```
+
+
+
+```{r}
+otw_data[21, 7] <- "None"
+```
+
+
+```{r}
+library(tidyverse)
+
+# STEP 1: Define YearGroup using Trial Initiation
+otw_data <- otw_data %>%
+  mutate(YearGroup = case_when(
+    `Trial Initiation` <= 2005 ~ "≤2005",
+    `Trial Initiation` >= 2006 & `Trial Initiation` <= 2010 ~ "2006–2010",
+    `Trial Initiation` >= 2011 & `Trial Initiation` <= 2015 ~ "2011–2015",
+    `Trial Initiation` >= 2016 & `Trial Initiation` <= 2020 ~ "2016–2020",
+    `Trial Initiation` >= 2021 & `Trial Initiation` <= 2025 ~ "2021–2025",
+    TRUE ~ "Unknown"
+  ),
+  YearGroup = factor(YearGroup, levels = c("≤2005", "2006–2010", "2011–2015", "2016–2020", "2021–2025", "Unknown"))
+  )
+
+
+# STEP 2: Set consistent design levels
+design_levels <- rev(c(
+  "RCT", 
+  "Parallel Assignment", 
+  "Single Group Assignment", 
+  "Sequential Assignment (non-randomized)", 
+  "Single Group Crossover", 
+  "Crossover Assignment"
+))
+
+other_designs <- setdiff(unique(otw_data$Design), design_levels)
+full_design_levels <- c(design_levels, sort(other_designs))
+
+otw_data$Design <- factor(otw_data$Design, levels = full_design_levels)
+
+# STEP 3: Filter datasets by status
+inprogress_data <- otw_data %>% filter(Status == "In-progress")
+terminated_data <- otw_data %>% filter(Status %in% c("Terminated", "Withdrawn"))
+
+# STEP 4: Count trials by YearGroup and Design
+inprogress_counts <- inprogress_data %>%
+  count(YearGroup, Design)
+
+terminated_counts <- terminated_data %>%
+  count(YearGroup, Design)
+
+# STEP 5: Plot - In-progress trials
+plot_inprogress <- ggplot(inprogress_counts, aes(x = YearGroup, y = n, fill = Design)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "In-progress Trials by Year and Design",
+    x = "Trial Initiation Year Group",
+    y = "Number of Trials",
+    fill = "Design"
+  ) +
+  theme_minimal() +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 10)) +
+  theme(
+    legend.position = "bottom",
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+# STEP 6: Plot - Terminated/Withdrawn trials
+plot_terminated <- ggplot(terminated_counts, aes(x = YearGroup, y = n, fill = Design)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Terminated or Withdrawn Trials by Year and Design",
+    x = "Trial Initiation Year Group",
+    y = "Number of Trials",
+    fill = "Design"
+  ) +
+  theme_minimal() +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 10)) +
+  theme(
+    legend.position = "bottom",
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+# STEP 7: Print the plots
+print(plot_inprogress)
+print(plot_terminated)
+
+```
+```{r}
+library(tidyverse)
+
+### === 1. Prepare completedtrialdesign ===
+
+completedtrialdesign <- completedtrialdesign %>%
+  mutate(YearGroup = case_when(
+    Initiation <= 2005 ~ "≤2005",
+    Initiation >= 2006 & Initiation <= 2010 ~ "2006–2010",
+    Initiation >= 2011 & Initiation <= 2015 ~ "2011–2015",
+    Initiation >= 2016 & Initiation <= 2020 ~ "2016–2020",
+    TRUE ~ "Unknown"
+  ),
+  YearGroup = factor(YearGroup, levels = c("≤2005", "2006–2010", "2011–2015", "2016–2020", "Unknown"))
+)
+
+# Standardize design levels
+# Standardize design levels
+design_levels <- rev(c(
+  "RCT", 
+  "Parallel Assignment", 
+  "Single Group Assignment", 
+  "Parallel Assignment (randomized)", 
+  "Single Group Crossover", 
+  "Sequential Assignment (non-randomized)",
+  "Crossover Assignment"
+))
+
+
+other_designs <- setdiff(unique(completedtrialdesign$Design), design_levels)
+full_design_levels <- c(design_levels, sort(other_designs))
+
+completedtrialdesign$Design <- factor(completedtrialdesign$Design, levels = full_design_levels)
+
+# Count trials
+completed_counts <- completedtrialdesign %>%
+  count(YearGroup, Design) %>%
+  mutate(Dataset = "Completed")
+
+
+### === 2. Prepare otw_data ===
+
+# Add YearGroup to otw_data
+otw_data <- otw_data %>%
+  mutate(YearGroup = case_when(
+    `Trial Initiation` <= 2005 ~ "≤2005",
+    `Trial Initiation` >= 2006 & `Trial Initiation` <= 2010 ~ "2006–2010",
+    `Trial Initiation` >= 2011 & `Trial Initiation` <= 2015 ~ "2011–2015",
+    `Trial Initiation` >= 2016 & `Trial Initiation` <= 2020 ~ "2016–2020",
+    `Trial Initiation` >= 2021 & `Trial Initiation` <= 2025 ~ "2021–2025",
+    TRUE ~ "Unknown"
+  ),
+  YearGroup = factor(YearGroup, levels = c("≤2005", "2006–2010", "2011–2015", "2016–2020", "2021–2025", "Unknown")),
+  Design = factor(Design, levels = full_design_levels)
+)
+
+# In-progress data
+inprogress_counts <- otw_data %>%
+  filter(Status == "In-progress") %>%
+  count(YearGroup, Design) %>%
+  mutate(Dataset = "In-progress")
+
+# Terminated/Withdrawn data
+terminated_counts <- otw_data %>%
+  filter(Status %in% c("Terminated", "Withdrawn")) %>%
+  count(YearGroup, Design) %>%
+  mutate(Dataset = "Terminated/Withdrawn")
+
+### === 3. Combine all three datasets ===
+
+combined_counts <- bind_rows(
+  completed_counts,
+  inprogress_counts,
+  terminated_counts
+)
+
+### === 4. Plot faceted bar plot ===
+
+library(ggplot2)
+library(viridis)
+
+final_plot2 <- ggplot(combined_trials, aes(x = TimeGroup, y = n, fill = AdjuvantSimplified)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~ StatusGroup, nrow = 1) +
+  labs(
+    title = "Number of Clinical Trials by Year and Concurrent Treatment/Study Design",
+    x = "Year",
+    y = "Number of Trials",
+    fill = "Concurrent Treatment"
+  ) +
+  scale_fill_viridis_d(option = "mako") +  # Deep blue/cyan
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 10)) +
+  theme_bw(base_size = 14) +
+  theme(
+    legend.position = "right",
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+# Display and save
+print(final_plot2)
+ggsave("combined_trials_by_year_and_treatment_mako.png", plot = final_plot2, width = 12, height = 6, dpi = 300, bg = "white")
+
+
+```
+```
+
+```{r}
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -325,30 +592,41 @@ combined_trials$AdjuvantSimplified <- factor(combined_trials$AdjuvantSimplified,
 # -------------------------
 
 library(ggplot2)
+library(viridis)
 
-final_plot2 <- ggplot(combined_trials, aes(x = TimeGroup, y = n, fill = AdjuvantSimplified)) +
+final_plot <- ggplot(combined_counts, aes(x = YearGroup, y = n, fill = Design)) +
   geom_bar(stat = "identity") +
-  facet_wrap(~ StatusGroup, nrow = 1) +
+  facet_wrap(~ Dataset, nrow = 1) +
   labs(
-    title = "Number of Clinical Trials by Year and Concurrent Treatment",
     x = "Year",
     y = "Number of Trials",
-    fill = "Concurrent Treatment"
+    fill = "Design"
   ) +
+  scale_fill_viridis_d(option = "plasma") +  # Vibrant purples/yellows
   scale_y_continuous(breaks = scales::pretty_breaks(n = 10)) +
   theme_bw(base_size = 14) +
   theme(
     legend.position = "right",
-    axis.text.x = element_text(angle = 45, hjust = 1)
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    strip.text = element_text(face = "plain")
   )
 
-# Display the plot
-print(final_plot2)
+# Display and save
+print(final_plot)
+ggsave("combined_trials_by_year_and_design_plasma.png", plot = final_plot, width = 12, height = 6, dpi = 300, bg = "white")
 
-# Save the plot
-ggsave("combined_trials_by_year_and_treatment.png", plot = final_plot2, width = 12, height = 6, dpi = 300, bg = "white")
+
 
 ```
 
+```{r}
+library(patchwork)
+
+combined <- final_plot2 / final_plot + plot_layout(ncol = 1)
+
+print(combined)
+ggsave("faceted_combined.png", combined, width = 12, height = 12, dpi = 300)
+
+```
 
 

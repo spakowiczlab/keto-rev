@@ -254,15 +254,15 @@ final_plot <- ggplot(combined_counts, aes(x = YearGroup, y = n, fill = Design)) 
     fill = "Design"
   ) +
  scale_y_continuous(breaks = scales::pretty_breaks(n = 10)) +
-  theme_minimal(base_size = 14) +
+  theme_bw(base_size = 14) +
   theme(
     legend.position = "right",
-    axis.text.x = element_text(angle = 45, hjust = 0.75),
+    axis.text.x = element_text(angle = 45, hjust = 1),
     strip.text = element_text(face = "plain")  # remove bold
   )
 
 # Save the plot
 print(final_plot)
-ggsave("combined_trials_by_year_and_design", plot = final_plot, width = 12, height = 6, dpi = 300, bg = "white")
+ggsave("combined_trials_by_year_and_design.png", plot = final_plot, width = 12, height = 6, dpi = 300, bg = "white")
 ```
 
