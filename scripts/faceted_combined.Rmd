@@ -65,7 +65,7 @@ ggplot(trial_counts, aes(x = YearGroup, y = n, fill = Design)) +
   labs(
     title = "Trial Design Over Time",
     x = "Year Group",
-    y = "Number of Trials",
+    y = "Number of Studies",
     fill = "Trial Design"
   ) +
   scale_y_continuous(breaks = scales::pretty_breaks(n = 10)) +
@@ -134,7 +134,7 @@ plot_inprogress <- ggplot(inprogress_counts, aes(x = YearGroup, y = n, fill = De
   labs(
     title = "In-progress Trials by Year and Design",
     x = "Trial Initiation Year Group",
-    y = "Number of Trials",
+    y = "Number of Studies",
     fill = "Design"
   ) +
   theme_minimal() +
@@ -150,7 +150,7 @@ plot_terminated <- ggplot(terminated_counts, aes(x = YearGroup, y = n, fill = De
   labs(
     title = "Terminated or Withdrawn Trials by Year and Design",
     x = "Trial Initiation Year Group",
-    y = "Number of Trials",
+    y = "Number of Studies",
     fill = "Design"
   ) +
   theme_minimal() +
@@ -252,7 +252,7 @@ final_plot2 <- ggplot(combined_trials, aes(x = TimeGroup, y = n, fill = Adjuvant
   labs(
     title = "Number of Clinical Trials by Year and Concurrent Treatment/Study Design",
     x = "Year",
-    y = "Number of Trials",
+    y = "Number of Studies",
     fill = "Concurrent Treatment"
   ) +
   scale_fill_viridis_d(option = "mako") +  # Deep blue/cyan
@@ -329,7 +329,7 @@ ggplot(plot_data, aes(x = TimeGroup, y = n, fill = AdjuvantSimplified)) +
   labs(
     title = "Number of Clinical Trials by Year Group and Treatment Type",
     x = "Trial Initiation Period",
-    y = "Number of Trials",
+    y = "Number of Studies",
     fill = "Treatment"
   ) +
   theme_minimal() +
@@ -393,7 +393,7 @@ ggplot(treatmentinitiation_summary, aes(x = YearGroup, y = n, fill = Treatment))
   labs(
     title = "Number of Clinical Trials by Year Group and Treatment Type",
     x = "Year Group",
-    y = "Number of Trials",
+    y = "Number of Studies",
     fill = "Treatment"
   ) +
   scale_y_continuous(breaks = scales::pretty_breaks(n = 10)) +
@@ -454,7 +454,7 @@ ggplot(in_progress_data, aes(x = TimeGroup, y = n, fill = AdjuvantSimplified)) +
   labs(
     title = "In-Progress Clinical Trials by Year Group and Treatment Type",
     x = "Trial Initiation Period",
-    y = "Number of Trials",
+    y = "Number of Studies",
     fill = "Treatment"
   ) +
   theme_minimal() +
@@ -469,7 +469,7 @@ ggplot(inactive_data, aes(x = TimeGroup, y = n, fill = AdjuvantSimplified)) +
   labs(
     title = "Terminated or Withdrawn Clinical Trials by Year Group and Treatment Type",
     x = "Trial Initiation Period",
-    y = "Number of Trials",
+    y = "Number of Studies",
     fill = "Treatment"
   ) +
   theme_minimal() +
@@ -494,7 +494,7 @@ ggplot(combined_plot_data, aes(x = TimeGroup, y = n, fill = AdjuvantSimplified))
   labs(
     title = "Number of Clinical Trials by Year Group and Treatment Type",
     x = "Trial Initiation Period",
-    y = "Number of Trials",
+    y = "Number of Studies",
     fill = "Treatment"
   ) +
   theme_minimal() +
@@ -599,7 +599,7 @@ final_plot <- ggplot(combined_counts, aes(x = YearGroup, y = n, fill = Design)) 
   facet_wrap(~ Dataset, nrow = 1) +
   labs(
     x = "Year",
-    y = "Number of Trials",
+    y = "Number of Studies",
     fill = "Design"
   ) +
   scale_fill_viridis_d(option = "plasma") +  # Vibrant purples/yellows
@@ -628,5 +628,76 @@ print(combined)
 ggsave("faceted_combined.png", combined, width = 12, height = 12, dpi = 300)
 
 ```
+
+## import PDF and reformat as PNG
+```{r}
+library(magick)
+library(pdftools)
+
+# Set parameters:
+# Here, 6.5" x 5" at 300 DPI translates to:
+dpi <- 300
+width_px  <- 6.5 * dpi   # 6.5 inches * 300 DPI = 1950 pixels
+height_px <- 5 * dpi     # 5 inches * 300 DPI = 1500 pixels
+
+# Define file paths
+input_pdf <- path.expand("~/keto-rev/exploratory/data/figures/faceted_combined_pptx.pdf")
+output_png  <- "~/keto-rev/exploratory/data/figures/faceted_combined.png"
+output_svg  <- "~/keto-rev/exploratory/data/figures/faceted_combined_pptx.svg"
+
+# Read the PDF using the desired density.
+# The density parameter uses the format "300x300" to set the resolution.
+pdf_img <- image_read_pdf(input_pdf, density = paste0(dpi, "x", dpi))
+
+# Force the image dimensions using a geometry string.
+# The "!" tells magick to ignore aspect ratio.
+resize_geom <- paste0(width_px, "x", height_px, "!")
+resized_img <- image_resize(pdf_img, resize_geom)
+
+# Write out the PNG.
+image_write(resized_img, path = output_png, format = "png")
+
+# Convert to MVG (Magick Vector Graphics) format.
+# This produces an SVG file that essentially embeds the raster image.
+resized_mvg <- image_convert(resized_img, format = "mvg")
+
+# Write the MVG content to an .svg file.
+cat(as.character(resized_mvg), file = output_svg)
+```
+~/keto-rev/exploratory/data/figures/faceted_combined_pptx.pdf
+
+```{r}
+# 1. install & load
+if (!requireNamespace("magick",  quietly=TRUE)) install.packages("magick")
+library(magick)
+
+# 2. define inputs
+pdf_path    <- path.expand("~/keto-rev/exploratory/data/figures/faceted_combined_pptx.pdf")
+png_path    <- path.expand("~/keto-rev/exploratory/data/figures/faceted_combined_pptx.png")
+
+# 3. set your target size & resolution
+dpi         <- 900                # dots-per-inch for print-quality
+width_in    <-  6.5               # inches
+height_in   <-  5                 # inches
+width_px    <- width_in  * dpi    # 1950 px
+height_px   <- height_in * dpi    # 1500 px
+
+# 4. read the PDF at high density
+img <- image_read_pdf(pdf_path, density = dpi)
+
+# (If your PDF has multiple pages and you only want page 1:)
+# img <- image_read_pdf(pdf_path, density = dpi, pages = 1)
+
+# 5. resize to exact dimensions (the “!” forces exact pixel size)
+img <- image_resize(img, geometry = paste0(width_px, "x", height_px, "!"))
+
+# 6. (Optional) Trim extra whitespace
+img <- image_trim(img)
+
+# 7. write out your PNG
+image_write(img, path = png_path, format = "png")
+```
+
+
 
 
