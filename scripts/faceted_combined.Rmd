@@ -65,7 +65,7 @@ ggplot(trial_counts, aes(x = YearGroup, y = n, fill = Design)) +
   labs(
     title = "Trial Design Over Time",
     x = "Year Group",
-    y = "Number of Studies",
+    y = "Number of Trials",
     fill = "Trial Design"
   ) +
   scale_y_continuous(breaks = scales::pretty_breaks(n = 10)) +
@@ -134,7 +134,7 @@ plot_inprogress <- ggplot(inprogress_counts, aes(x = YearGroup, y = n, fill = De
   labs(
     title = "In-progress Trials by Year and Design",
     x = "Trial Initiation Year Group",
-    y = "Number of Studies",
+    y = "Number of Trials",
     fill = "Design"
   ) +
   theme_minimal() +
@@ -150,7 +150,7 @@ plot_terminated <- ggplot(terminated_counts, aes(x = YearGroup, y = n, fill = De
   labs(
     title = "Terminated or Withdrawn Trials by Year and Design",
     x = "Trial Initiation Year Group",
-    y = "Number of Studies",
+    y = "Number of Trials",
     fill = "Design"
   ) +
   theme_minimal() +
@@ -252,7 +252,7 @@ final_plot2 <- ggplot(combined_trials, aes(x = TimeGroup, y = n, fill = Adjuvant
   labs(
     title = "Number of Clinical Trials by Year and Concurrent Treatment/Study Design",
     x = "Year",
-    y = "Number of Studies",
+    y = "Number of Trials",
     fill = "Concurrent Treatment"
   ) +
   scale_fill_viridis_d(option = "mako") +  # Deep blue/cyan
@@ -329,7 +329,7 @@ ggplot(plot_data, aes(x = TimeGroup, y = n, fill = AdjuvantSimplified)) +
   labs(
     title = "Number of Clinical Trials by Year Group and Treatment Type",
     x = "Trial Initiation Period",
-    y = "Number of Studies",
+    y = "Number of Trials",
     fill = "Treatment"
   ) +
   theme_minimal() +
@@ -393,7 +393,7 @@ ggplot(treatmentinitiation_summary, aes(x = YearGroup, y = n, fill = Treatment))
   labs(
     title = "Number of Clinical Trials by Year Group and Treatment Type",
     x = "Year Group",
-    y = "Number of Studies",
+    y = "Number of Trials",
     fill = "Treatment"
   ) +
   scale_y_continuous(breaks = scales::pretty_breaks(n = 10)) +
@@ -454,7 +454,7 @@ ggplot(in_progress_data, aes(x = TimeGroup, y = n, fill = AdjuvantSimplified)) +
   labs(
     title = "In-Progress Clinical Trials by Year Group and Treatment Type",
     x = "Trial Initiation Period",
-    y = "Number of Studies",
+    y = "Number of Trials",
     fill = "Treatment"
   ) +
   theme_minimal() +
@@ -469,7 +469,7 @@ ggplot(inactive_data, aes(x = TimeGroup, y = n, fill = AdjuvantSimplified)) +
   labs(
     title = "Terminated or Withdrawn Clinical Trials by Year Group and Treatment Type",
     x = "Trial Initiation Period",
-    y = "Number of Studies",
+    y = "Number of Trials",
     fill = "Treatment"
   ) +
   theme_minimal() +
@@ -494,7 +494,7 @@ ggplot(combined_plot_data, aes(x = TimeGroup, y = n, fill = AdjuvantSimplified))
   labs(
     title = "Number of Clinical Trials by Year Group and Treatment Type",
     x = "Trial Initiation Period",
-    y = "Number of Studies",
+    y = "Number of Trials",
     fill = "Treatment"
   ) +
   theme_minimal() +
@@ -599,7 +599,7 @@ final_plot <- ggplot(combined_counts, aes(x = YearGroup, y = n, fill = Design)) 
   facet_wrap(~ Dataset, nrow = 1) +
   labs(
     x = "Year",
-    y = "Number of Studies",
+    y = "Number of Trials",
     fill = "Design"
   ) +
   scale_fill_viridis_d(option = "plasma") +  # Vibrant purples/yellows
