@@ -1,0 +1,190 @@
+---
+title: "condensed_combined"
+author: "Jonah Bukovac"
+date: "2025-07-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+## Concurrent Treatment (final_plot)
+```{r}
+library(tidyverse)
+library(readxl)
+library(ggplot2)
+library(viridis)
+library(patchwork)
+library(magick)
+
+# Ensure otw_data and treatmentinitiation_data are loaded before running
+
+otw_data <- otw_data %>%
+  mutate(
+    AdjuvantSimplified = case_when(
+      str_detect(`Adjuvant Therapy`, regex("Immunotherapy", ignore_case = TRUE)) ~ "Immunotherapy",
+      str_detect(`Adjuvant Therapy`, regex("Chemoradiation", ignore_case = TRUE)) ~ "Chemoradiation",
+      str_detect(`Adjuvant Therapy`, regex("Chemotherapy", ignore_case = TRUE)) ~ "Chemotherapy",
+      str_detect(`Adjuvant Therapy`, regex("None", ignore_case = TRUE)) ~ "None",
+      TRUE ~ "Other"
+    ),
+    TimeGroup = case_when(
+      `Trial Initiation` <= 2005 ~ "≤2005",
+      `Trial Initiation` >= 2006 & `Trial Initiation` <= 2010 ~ "2006–2010",
+      `Trial Initiation` >= 2011 & `Trial Initiation` <= 2015 ~ "2011–2015",
+      `Trial Initiation` >= 2016 & `Trial Initiation` <= 2020 ~ "2016–2020",
+      `Trial Initiation` >= 2021 ~ "2021–2025",
+      TRUE ~ "Other"
+    ),
+    TimeGroup = factor(TimeGroup, levels = c("≤2005", "2006–2010", "2011–2015", "2016–2020", "2021–2025"))
+  )
+
+in_progress_data <- otw_data %>%
+  filter(Status == "In-progress") %>%
+  count(TimeGroup, AdjuvantSimplified) %>%
+  mutate(StatusGroup = "In-progress")
+
+inactive_data <- otw_data %>%
+  filter(Status %in% c("Terminated", "Withdrawn")) %>%
+  count(TimeGroup, AdjuvantSimplified) %>%
+  mutate(StatusGroup = "Terminated/Withdrawn")
+
+treatmentinitiation_data$Initiation <- as.numeric(treatmentinitiation_data$Initiation)
+
+completed_data <- treatmentinitiation_data %>%
+  mutate(
+    Treatment = case_when(
+      Treatment %in% c("Bevacizumab", "Chemotherapy or Radiation Therapy") ~ "Other",
+      TRUE ~ Treatment
+    ),
+    TimeGroup = case_when(
+      Initiation <= 2005 ~ "≤2005",
+      Initiation >= 2006 & Initiation <= 2010 ~ "2006–2010",
+      Initiation >= 2011 & Initiation <= 2015 ~ "2011–2015",
+      Initiation >= 2016 & Initiation <= 2020 ~ "2016–2020",
+      Initiation >= 2021 ~ "2021–2025",
+      TRUE ~ "Other"
+    ),
+    TimeGroup = factor(TimeGroup, levels = c("≤2005", "2006–2010", "2011–2015", "2016–2020", "2021–2025"))
+  ) %>%
+  count(TimeGroup, Treatment) %>%
+  rename(AdjuvantSimplified = Treatment) %>%
+  mutate(StatusGroup = "Completed")
+
+combined_trials <- bind_rows(in_progress_data, inactive_data, completed_data)
+
+combined_trials$AdjuvantSimplified <- factor(combined_trials$AdjuvantSimplified,
+  levels = c("Immunotherapy", "Chemoradiation", "Chemotherapy", "Radiotherapy", "Other", "None")
+)
+
+final_plot <- ggplot(combined_trials, aes(x = TimeGroup, y = n, fill = AdjuvantSimplified)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~ StatusGroup, nrow = 1) +
+  labs(
+    title = "Number of Clinical Trials by Year Group and Treatment Type",
+    x = "Trial Initiation Period",
+    y = "Number of Trials",
+    fill = "Treatment"
+  ) +
+  scale_fill_viridis_d(option = "mako") +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 10)) +
+  theme_bw(base_size = 14) +
+  theme(
+    legend.position = "right",
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    strip.text = element_text(face = "plain")
+  )
+```
+
+
+## Study Design (final_plot2)
+```{r}
+completedtrialdesign <- completedtrialdesign %>%
+  mutate(
+    YearGroup = case_when(
+      Initiation <= 2005 ~ "≤2005",
+      Initiation <= 2010 ~ "2006–2010",
+      Initiation <= 2015 ~ "2011–2015",
+      Initiation <= 2020 ~ "2016–2020",
+      TRUE ~ "Unknown"
+    ),
+    YearGroup = factor(YearGroup, levels = c("≤2005", "2006–2010", "2011–2015", "2016–2020", "Unknown"))
+  )
+
+design_levels <- rev(c(
+  "RCT", 
+  "Parallel Assignment", 
+  "Single Group Assignment", 
+  "Parallel Assignment (randomized)", 
+  "Single Group Crossover", 
+  "Sequential Assignment (non-randomized)",
+  "Crossover Assignment"
+))
+
+other_designs <- setdiff(unique(completedtrialdesign$Design), design_levels)
+full_design_levels <- c(design_levels, sort(other_designs))
+
+completedtrialdesign$Design <- factor(completedtrialdesign$Design, levels = full_design_levels)
+
+completed_counts <- completedtrialdesign %>%
+  count(YearGroup, Design) %>%
+  mutate(Dataset = "Completed")
+
+
+otw_data <- otw_data %>%
+  mutate(
+    YearGroup = case_when(
+      `Trial Initiation` <= 2005 ~ "≤2005",
+      `Trial Initiation` <= 2010 ~ "2006–2010",
+      `Trial Initiation` <= 2015 ~ "2011–2015",
+      `Trial Initiation` <= 2020 ~ "2016–2020",
+      `Trial Initiation` <= 2025 ~ "2021–2025",
+      TRUE ~ "Unknown"
+    ),
+    YearGroup = factor(YearGroup, levels = c("≤2005", "2006–2010", "2011–2015", "2016–2020", "2021–2025", "Unknown")),
+    Design = factor(Design, levels = full_design_levels)
+  )
+
+inprogress_counts <- otw_data %>%
+  filter(Status == "In-progress") %>%
+  count(YearGroup, Design) %>%
+  mutate(Dataset = "In-progress")
+
+terminated_counts <- otw_data %>%
+  filter(Status %in% c("Terminated", "Withdrawn")) %>%
+  count(YearGroup, Design) %>%
+  mutate(Dataset = "Terminated/Withdrawn")
+
+combined_counts <- bind_rows(completed_counts, inprogress_counts, terminated_counts)
+
+final_plot2 <- ggplot(combined_counts, aes(x = YearGroup, y = n, fill = Design)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~ Dataset, nrow = 1) +
+  labs(
+    title = "Clinical Trial Designs Over Time",
+    x = "Trial Initiation Period",
+    y = "Number of Trials",
+    fill = "Design"
+  ) +
+  scale_fill_viridis_d(option = "plasma") +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 10)) +
+  theme_bw(base_size = 14) +
+  theme(
+    legend.position = "right",
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    strip.text = element_text(face = "plain")
+  )
+```
+
+
+
+## Combine Final Plots
+```{r}
+combined <- final_plot2 / final_plot + plot_layout(ncol = 1)
+
+ggsave("faceted_combined.png", combined, width = 12, height = 12, dpi = 300)
+```
+

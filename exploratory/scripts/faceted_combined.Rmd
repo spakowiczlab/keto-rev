@@ -265,7 +265,6 @@ final_plot2 <- ggplot(combined_trials, aes(x = TimeGroup, y = n, fill = Adjuvant
 
 # Display and save
 print(final_plot2)
-ggsave("combined_trials_by_year_and_treatment_mako.png", plot = final_plot2, width = 12, height = 6, dpi = 300, bg = "white")
 
 
 ```
@@ -613,7 +612,6 @@ final_plot <- ggplot(combined_counts, aes(x = YearGroup, y = n, fill = Design)) 
 
 # Display and save
 print(final_plot)
-ggsave("combined_trials_by_year_and_design_plasma.png", plot = final_plot, width = 12, height = 6, dpi = 300, bg = "white")
 
 
 
@@ -622,49 +620,13 @@ ggsave("combined_trials_by_year_and_design_plasma.png", plot = final_plot, width
 ```{r}
 library(patchwork)
 
-combined <- final_plot2 / final_plot + plot_layout(ncol = 1)
+combined <- final_plot / final_plot2 + plot_layout(ncol = 1)
 
 print(combined)
 ggsave("faceted_combined.png", combined, width = 12, height = 12, dpi = 300)
 
 ```
 
-## import PDF and reformat as PNG
-```{r}
-library(magick)
-library(pdftools)
-
-# Set parameters:
-# Here, 6.5" x 5" at 300 DPI translates to:
-dpi <- 300
-width_px  <- 6.5 * dpi   # 6.5 inches * 300 DPI = 1950 pixels
-height_px <- 5 * dpi     # 5 inches * 300 DPI = 1500 pixels
-
-# Define file paths
-input_pdf <- path.expand("~/keto-rev/exploratory/data/figures/faceted_combined_pptx.pdf")
-output_png  <- "~/keto-rev/exploratory/data/figures/faceted_combined.png"
-output_svg  <- "~/keto-rev/exploratory/data/figures/faceted_combined_pptx.svg"
-
-# Read the PDF using the desired density.
-# The density parameter uses the format "300x300" to set the resolution.
-pdf_img <- image_read_pdf(input_pdf, density = paste0(dpi, "x", dpi))
-
-# Force the image dimensions using a geometry string.
-# The "!" tells magick to ignore aspect ratio.
-resize_geom <- paste0(width_px, "x", height_px, "!")
-resized_img <- image_resize(pdf_img, resize_geom)
-
-# Write out the PNG.
-image_write(resized_img, path = output_png, format = "png")
-
-# Convert to MVG (Magick Vector Graphics) format.
-# This produces an SVG file that essentially embeds the raster image.
-resized_mvg <- image_convert(resized_img, format = "mvg")
-
-# Write the MVG content to an .svg file.
-cat(as.character(resized_mvg), file = output_svg)
-```
-~/keto-rev/exploratory/data/figures/faceted_combined_pptx.pdf
 
 ```{r}
 # 1. install & load

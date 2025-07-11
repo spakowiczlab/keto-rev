@@ -1,0 +1,289 @@
+---
+title: "final_figure_wMB_endpoints"
+output: html_document
+date: "2025-07-07"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(readxl)
+library(ggplot2)
+library(viridis)
+library(patchwork)
+library(magick)
+library(ggpattern)
+```
+
+
+
+```{r}
+library(ggpattern)
+
+# Add pattern column before combining
+in_progress_data <- otw_data %>%
+  filter(Status == "In-progress") %>%
+  mutate(
+    AdjuvantSimplified = case_when(
+      str_detect(`Adjuvant Therapy`, regex("Immunotherapy", ignore_case = TRUE)) ~ "Immunotherapy",
+      str_detect(`Adjuvant Therapy`, regex("Chemoradiation", ignore_case = TRUE)) ~ "Chemoradiation",
+      str_detect(`Adjuvant Therapy`, regex("Chemotherapy", ignore_case = TRUE)) ~ "Chemotherapy",
+      str_detect(`Adjuvant Therapy`, regex("None", ignore_case = TRUE)) ~ "None",
+      TRUE ~ "Other"
+    ),
+    TimeGroup = case_when(
+      `Trial Initiation` <= 2005 ~ "≤2005",
+      `Trial Initiation` <= 2010 ~ "2006–2010",
+      `Trial Initiation` <= 2015 ~ "2011–2015",
+      `Trial Initiation` <= 2020 ~ "2016–2020",
+      `Trial Initiation` >= 2021 ~ "2021–2025",
+      TRUE ~ "Other"
+    ),
+    pattern = ifelse(`MB Endpoint` == "Yes", "stripe", "none")
+  ) %>%
+  count(TimeGroup, AdjuvantSimplified, pattern) %>%
+  mutate(StatusGroup = "In-progress")
+
+inactive_data <- otw_data %>%
+  filter(Status %in% c("Terminated", "Withdrawn")) %>%
+  mutate(
+    AdjuvantSimplified = case_when(
+      str_detect(`Adjuvant Therapy`, regex("Immunotherapy", ignore_case = TRUE)) ~ "Immunotherapy",
+      str_detect(`Adjuvant Therapy`, regex("Chemoradiation", ignore_case = TRUE)) ~ "Chemoradiation",
+      str_detect(`Adjuvant Therapy`, regex("Chemotherapy", ignore_case = TRUE)) ~ "Chemotherapy",
+      str_detect(`Adjuvant Therapy`, regex("None", ignore_case = TRUE)) ~ "None",
+      TRUE ~ "Other"
+    ),
+    TimeGroup = case_when(
+      `Trial Initiation` <= 2005 ~ "≤2005",
+      `Trial Initiation` <= 2010 ~ "2006–2010",
+      `Trial Initiation` <= 2015 ~ "2011–2015",
+      `Trial Initiation` <= 2020 ~ "2016–2020",
+      `Trial Initiation` >= 2021 ~ "2021–2025",
+      TRUE ~ "Other"
+    ),
+    pattern = ifelse(`MB Endpoint` == "Yes", "stripe", "none")
+  ) %>%
+  count(TimeGroup, AdjuvantSimplified, pattern) %>%
+  mutate(StatusGroup = "Terminated/Withdrawn")
+
+# For completed trials
+treatmentinitiation_data$Initiation <- as.numeric(treatmentinitiation_data$Initiation)
+completed_data <- treatmentinitiation_data %>%
+  mutate(
+    Treatment = case_when(
+      Treatment %in% c("Bevacizumab", "Chemotherapy or Radiation Therapy") ~ "Other",
+      TRUE ~ Treatment
+    ),
+    TimeGroup = case_when(
+      Initiation <= 2005 ~ "≤2005",
+      Initiation <= 2010 ~ "2006–2010",
+      Initiation <= 2015 ~ "2011–2015",
+      Initiation <= 2020 ~ "2016–2020",
+      Initiation >= 2021 ~ "2021–2025",
+      TRUE ~ "Other"
+    ),
+    pattern = ifelse(`MB Endpoint` == "Yes", "stripe", "none")
+  ) %>%
+  count(TimeGroup, Treatment, pattern) %>%
+  rename(AdjuvantSimplified = Treatment) %>%
+  mutate(StatusGroup = "Completed")
+
+# Combine and factor
+combined_trials <- bind_rows(in_progress_data, inactive_data, completed_data)
+combined_trials$AdjuvantSimplified <- factor(combined_trials$AdjuvantSimplified,
+  levels = c("Immunotherapy", "Chemoradiation", "Chemotherapy", "Radiotherapy", "Other", "None"))
+
+# Plot
+final_plot <- ggplot(combined_trials, aes(x = TimeGroup, y = n,
+                                          fill = AdjuvantSimplified, pattern = pattern)) +
+  geom_bar_pattern(
+    stat = "identity",
+    pattern_fill = "black",
+    pattern_angle = 45,
+    pattern_density = 0.1,
+    pattern_spacing = 0.05,
+    pattern_key_scale_factor = 0.6
+  ) +
+  facet_wrap(~ StatusGroup, nrow = 1) +
+  labs(
+    title = "Number of Clinical Trials by Year Group and Treatment Type",
+    x = "Year",
+    y = "Number of Trials",
+    fill = "Treatment"
+  ) +
+    scale_fill_viridis_d(option = "mako") +
+  scale_pattern_manual(
+    name = "Microbiome Endpoint",
+    values = c("stripe" = "stripe", "none" = "none"),
+    labels = c("stripe" = "Yes", "none" = "No")
+  ) +
+  guides(
+    fill = guide_legend(override.aes = list(pattern = "none")),
+    pattern = guide_legend(title = "Microbiome Endpoint",
+                           override.aes = list(fill = "grey80"))
+  ) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 10)) +
+  theme_bw(base_size = 14) +
+  theme(
+    legend.position = "right",
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    strip.text = element_text(face = "plain")
+  )
+
+
+```
+
+
+
+```{r}
+library(ggpattern)
+
+# First, add 'pattern' column during summarization of each group
+completed_counts <- completedtrialdesign %>%
+  mutate(
+    YearGroup = case_when(
+      Initiation <= 2005 ~ "≤2005",
+      Initiation <= 2010 ~ "2006–2010",
+      Initiation <= 2015 ~ "2011–2015",
+      Initiation <= 2020 ~ "2016–2020",
+      TRUE ~ "Unknown"
+    ),
+    pattern = ifelse(`MB Endpoint` == "Yes", "stripe", "none")
+  ) %>%
+  count(YearGroup, Design, pattern) %>%
+  mutate(Dataset = "Completed")
+
+inprogress_counts <- otw_data %>%
+  mutate(
+    YearGroup = case_when(
+      `Trial Initiation` <= 2005 ~ "≤2005",
+      `Trial Initiation` <= 2010 ~ "2006–2010",
+      `Trial Initiation` <= 2015 ~ "2011–2015",
+      `Trial Initiation` <= 2020 ~ "2016–2020",
+      `Trial Initiation` <= 2025 ~ "2021–2025",
+      TRUE ~ "Unknown"
+    ),
+    pattern = ifelse(`MB Endpoint` == "Yes", "stripe", "none")
+  ) %>%
+  filter(Status == "In-progress") %>%
+  count(YearGroup, Design, pattern) %>%
+  mutate(Dataset = "In-progress")
+
+terminated_counts <- otw_data %>%
+  mutate(
+    YearGroup = case_when(
+      `Trial Initiation` <= 2005 ~ "≤2005",
+      `Trial Initiation` <= 2010 ~ "2006–2010",
+      `Trial Initiation` <= 2015 ~ "2011–2015",
+      `Trial Initiation` <= 2020 ~ "2016–2020",
+      `Trial Initiation` <= 2025 ~ "2021–2025",
+      TRUE ~ "Unknown"
+    ),
+    pattern = ifelse(`MB Endpoint` == "Yes", "stripe", "none")
+  ) %>%
+  filter(Status %in% c("Terminated", "Withdrawn")) %>%
+  count(YearGroup, Design, pattern) %>%
+  mutate(Dataset = "Terminated/Withdrawn")
+
+# Combine all
+combined_counts <- bind_rows(completed_counts, inprogress_counts, terminated_counts)
+
+# Preserve Design factor levels
+design_levels <- rev(c(
+  "RCT", 
+  "Parallel Assignment", 
+  "Single Group Assignment", 
+  "Parallel Assignment (randomized)", 
+  "Single Group Crossover", 
+  "Sequential Assignment (non-randomized)",
+  "Crossover Assignment"
+))
+other_designs <- setdiff(unique(combined_counts$Design), design_levels)
+full_design_levels <- c(design_levels, sort(other_designs))
+combined_counts$Design <- factor(combined_counts$Design, levels = full_design_levels)
+
+# Build the ggplot
+final_plot2 <- ggplot(combined_counts, aes(x = YearGroup, y = n, fill = Design, pattern = pattern)) +
+  geom_bar_pattern(
+    stat = "identity",
+    pattern_fill = "black",
+    pattern_angle = 45,
+    pattern_density = 0.1,
+    pattern_spacing = 0.05,
+    pattern_key_scale_factor = 0.6
+  ) +
+  facet_wrap(~ Dataset, nrow = 1) +
+  labs(
+    title = "Clinical Trial Designs Over Time",
+    x = "Trial Initiation Period",
+    y = "Number of Trials",
+    fill = "Design"
+  ) +
+    scale_fill_viridis_d(option = "plasma") +
+  scale_pattern_manual(
+    name = "Microbiome Endpoint",
+    values = c("stripe" = "stripe", "none" = "none"),
+    labels = c("stripe" = "Yes", "none" = "No")
+  ) +
+  guides(
+    fill = guide_legend(override.aes = list(pattern = "none")),
+    pattern = guide_legend(title = "Microbiome Endpoint",
+                           override.aes = list(fill = "grey80"))
+  ) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 10)) +
+  theme_bw(base_size = 14) +
+  theme(
+    legend.position = "right",
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    strip.text = element_text(face = "plain")
+  )
+
+
+```
+
+
+
+```{r}
+combined <- final_plot2 / final_plot + plot_layout(ncol = 1)
+ggsave("faceted_combined.png", combined, width = 12, height = 9.5, dpi = 300)
+```
+
+
+
+
+```{r}
+# 1. install & load
+library(magick)
+library(pdftools)
+
+# 2. define inputs
+pdf_path    <- path.expand("~/Desktop/faceted_combined_pptx.pdf")
+png_path    <- path.expand("~/Desktop/faceted_combined_pptx.png")
+
+# 3. set your target size & resolution
+dpi         <- 1200                # dots-per-inch for print-quality
+width_in    <-  6.5               # inches
+height_in   <-  5                 # inches
+width_px    <- width_in  * dpi    # 1950 px
+height_px   <- height_in * dpi    # 1500 px
+
+# 4. read the PDF at high density
+img <- image_read_pdf(pdf_path, density = dpi)
+
+# (If your PDF has multiple pages and you only want page 1:)
+# img <- image_read_pdf(pdf_path, density = dpi, pages = 1)
+
+# 5. resize to exact dimensions (the “!” forces exact pixel size)
+img <- image_resize(img, geometry = paste0(width_px, "x", height_px, "!"))
+
+# 6. (Optional) Trim extra whitespace
+img <- image_trim(img)
+
+# 7. write out your PNG
+image_write(img, path = png_path, format = "png")
+```
+
