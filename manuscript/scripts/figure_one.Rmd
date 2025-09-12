@@ -261,8 +261,8 @@ library(magick)
 library(pdftools)
 
 # 2. define inputs
-pdf_path    <- path.expand("~/Desktop/faceted_combined_pptx.pdf")
-png_path    <- path.expand("~/Desktop/faceted_combined_pptx.png")
+pdf_path    <- path.expand("~/faceted_combined_pptx.pdf")
+png_path    <- path.expand("~/faceted_combined_pptx.png")
 
 # 3. set your target size & resolution
 dpi         <- 1200                # dots-per-inch for print-quality
